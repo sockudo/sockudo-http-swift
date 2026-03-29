@@ -1,0 +1,329 @@
+import APIota
+import Foundation
+import Security
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
+/// Manages operations when interacting with the Sockudo Channels HTTP API.
+public class Sockudo {
+
+    // MARK: - Properties
+
+    /// The API client used for querying app state via the Channels HTTP API.
+    private let apiClient: APIotaClient
+
+    /// Configuration options used to managing the connection.
+    private let options: SockudoClientOptions
+
+    /// A compact base64url-encoded random identifier (16 chars from 12 random bytes),
+    /// generated once per client instance. Used as the prefix for deterministic idempotency keys.
+    private let baseId: String
+
+    /// A monotonically increasing counter that advances before each trigger call.
+    /// Combined with `baseId` to form deterministic idempotency keys (`{baseId}:{publishSerial}`).
+    private var publishSerial: UInt64 = 0
+
+    /// A lock protecting `publishSerial` for thread-safe access.
+    private let serialLock = NSLock()
+
+    private let maxRetries = 3
+
+    /// When `true` (the default), every `trigger` call that does not already carry
+    /// an explicit idempotency key will have one auto-generated in the format
+    /// `{baseId}:{publishSerial}`. The serial increments before each call so
+    /// retries reuse the same key.
+    public var autoIdempotencyKey: Bool = true
+
+    // MARK: - Lifecycle
+
+    /// Creates a Sockudo Channels HTTP API client configured using some `SockudoClientOptions`.
+    /// - Parameter options: Configuration options used to managing the connection.
+    public init(options: SockudoClientOptions) {
+        self.apiClient = APIClient(options: options)
+        self.options = options
+        self.baseId = Sockudo.generateBaseId()
+    }
+
+    /// Creates a Sockudo Channels HTTP API client from a type conforming to `APIotaClient`.
+    /// - Parameter apiClient: The API client used to manage the connection.
+    /// - Parameter options: Configuration options used to managing the connection.
+    init(apiClient: APIotaClient, options: SockudoClientOptions) {
+        self.apiClient = apiClient
+        self.options = options
+        self.baseId = Sockudo.generateBaseId()
+    }
+
+    private static func generateBaseId() -> String {
+        var bytes = [UInt8](repeating: 0, count: 12)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        return Data(bytes).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    // MARK: - Application state queries
+
+    /// Fetches an array of `ChannelSummary` records for any occupied channels.
+    /// - Parameters:
+    ///   - filter: A filter to apply to the returned results.
+    ///   - attributeOptions: A set of attributes that should be returned in each `ChannelSummary`.
+    ///   - callback: A closure that returns a `Result` containing an array of `ChannelSummary`
+    ///               instances, or a `SockudoError` if the operation fails for some reason.
+    public func channels(withFilter filter: ChannelFilter = .any,
+                         attributeOptions: ChannelAttributeFetchOptions = [],
+                         callback: @escaping (Result<[ChannelSummary], SockudoError>) -> Void) {
+
+        apiClient.sendRequest(for: GetChannelsEndpoint(channelFilter: filter,
+                                                       attributeOptions: attributeOptions,
+                                                       options: options)) { result in
+
+            // Map the API response to `[ChannelSummary]` when running the callback
+            // and map the API client error to an equivalent `SockudoError`
+            callback(result
+                        .map { $0.channelSummaries }
+                        .mapError({ SockudoError(from: $0) }))
+        }
+    }
+
+    /// Fetches the `ChannelInfo` for a given occupied channel.
+    /// - Parameters:
+    ///   - channel: The channel to inspect.
+    ///   - attributeOptions: A set of attributes that should be returned for the `channel`.
+    ///   - callback: A closure that returns a `Result` containing a `ChannelInfo` instance,
+    ///               or a `SockudoError` if the operation fails for some reason.
+    public func channelInfo(for channel: Channel,
+                            attributeOptions: ChannelAttributeFetchOptions = [],
+                            callback: @escaping (Result<ChannelInfo, SockudoError>) -> Void) {
+
+        apiClient.sendRequest(for: GetChannelEndpoint(channel: channel,
+                                                      attributeOptions: attributeOptions,
+                                                      options: options)) { result in
+
+            // Map the API client error to an equivalent `SockudoError`
+            callback(result.mapError({ SockudoError(from: $0) }))
+        }
+    }
+
+    /// Fetches an array of `User` records currently subscribed to a given occupied presence `Channel`.
+    ///
+    /// Users can only be fetched from presence channels. Using a channel with a `ChannelType`
+    /// other than `presence` is invalid and will result in an error.
+    /// - Parameters:
+    ///   - channel: The presence channel to inspect.
+    ///   - callback: A closure that returns a `Result` containing an array of `User` instances
+    ///               subscribed to the `channel`, or a `SockudoError` if the operation fails
+    ///               for some reason.
+    public func users(for channel: Channel,
+                      callback: @escaping (Result<[User], SockudoError>) -> Void) {
+
+        apiClient.sendRequest(for: GetUsersEndpoint(channel: channel,
+                                                    options: options)) { result in
+
+            // Map the API response to `[User]` when running the callback
+            // and map the API client error to an equivalent `SockudoError`
+            callback(result
+                        .map { $0.users }
+                        .mapError({ SockudoError(from: $0) }))
+        }
+    }
+
+    // MARK: - Idempotency
+
+    /// Generates a unique idempotency key using a UUID string.
+    /// - Returns: A UUID string suitable for use as an idempotency key.
+    public static func generateIdempotencyKey() -> String {
+        return UUID().uuidString
+    }
+
+    // MARK: - Triggering events
+
+    /// Triggers an `Event` on one or more `Channel` instances.
+    ///
+    /// The channel (or channels) that the event should be triggered on, (as well as the
+    /// attributes to fetch for each channel) are specified when initializing `event`.
+    /// - Parameters:
+    ///   - event: The event to trigger.
+    ///   - callback: A closure that returns a `Result` containing an array of `ChannelSummary`
+    ///               instances, or a `SockudoError` if the operation fails for some reason.
+    ///               If the `attributeOptions` on the `event` are not set, an empty channel
+    ///               array will be returned.
+    public func trigger(event: Event,
+                        callback: @escaping (Result<[ChannelSummary], SockudoError>) -> Void) {
+
+        do {
+            var eventToTrigger = event
+
+            let serial = nextSerial()
+            if autoIdempotencyKey && event.idempotencyKey == nil {
+                eventToTrigger = try event.withIdempotencyKey("\(baseId):\(serial)")
+            }
+
+            eventToTrigger = try eventToTrigger.encrypted(using: options)
+            sendWithRetry(
+                endpoint: TriggerEventEndpoint(httpBody: eventToTrigger, options: options),
+                attempt: 0
+            ) { result in
+                callback(result
+                            .map { $0.channelSummaries }
+                            .mapError({ SockudoError(from: $0) }))
+            }
+        } catch {
+            callback(.failure(SockudoError(from: error)))
+        }
+    }
+
+    /// Triggers multiple events, each on a specific `Channel`.
+    ///
+    /// The channel that the event should be triggered on, (as well as the
+    /// attributes to fetch for the each channel) are specified when initializing `event`.
+    ///
+    /// Any event in `events` that specifies more than one channel to trigger on will result in
+    /// an error. Providing an array of more than 10 events to trigger will also result in an error.
+    /// - Parameters:
+    ///   - events: An array of events to trigger.
+    ///   - callback: A closure that returns a `Result` containing an array of `ChannelInfo` instances
+    ///               (where the instance at index `i` corresponds to the channel for `events[i]`,
+    ///               or a `SockudoError` if the operation fails for some reason.
+    ///               If the `attributeOptions` on the `event` are not set, an empty information
+    ///               array will be returned.
+    public func trigger(events: [Event],
+                        idempotencyKey: String? = nil,
+                        callback: @escaping (Result<[ChannelInfo], SockudoError>) -> Void) {
+
+        do {
+            var eventsToTrigger: [Event]
+            let serial = nextSerial()
+
+            if autoIdempotencyKey {
+                eventsToTrigger = try events.enumerated().map { index, event in
+                    var modified = event
+                    if event.idempotencyKey == nil {
+                        modified = try event.withIdempotencyKey("\(baseId):\(serial):\(index)")
+                    }
+                    return try modified.encrypted(using: options)
+                }
+            } else {
+                eventsToTrigger = try events.map { try $0.encrypted(using: options) }
+            }
+
+            sendWithRetry(
+                endpoint: TriggerBatchEventsEndpoint(events: eventsToTrigger,
+                                                     options: options,
+                                                     idempotencyKey: idempotencyKey),
+                attempt: 0
+            ) { result in
+                callback(result
+                            .map { $0.channelInfoList }
+                            .mapError({ SockudoError(from: $0) }))
+            }
+        } catch {
+            callback(.failure(SockudoError(from: error)))
+        }
+    }
+
+    // MARK: - Webhook verification
+
+    /// Verifies that a received Webhook request is genuine and was received from Sockudo.
+    ///
+    /// Webhook endpoints are accessible to the global internet. Therefore, verifying that
+    /// a Webhook request originated from Sockudo is important. Valid Webhooks contain special headers
+    /// that contain a copy of your application key and a HMAC signature of the Webhook payload (i.e. its body).
+    /// - Parameters:
+    ///   - request: The received Webhook request.
+    ///   - callback: A closure that returns a `Result` containing a verified `Webhook` and the
+    ///               events that were sent with it (which are decrypted if needed), or a `SockudoError`
+    ///               if the operation fails for some reason.
+    public func verifyWebhook(request: URLRequest,
+                              callback: @escaping (Result<Webhook, SockudoError>) -> Void) {
+
+        // Verify request key and signature and then decode into a `Webhook`
+        do {
+            try WebhookService.verifySignature(of: request, using: options)
+            let webhook = try WebhookService.webhook(from: request, using: options)
+
+            callback(.success(webhook))
+        } catch {
+            callback(.failure(SockudoError(from: error)))
+        }
+    }
+
+    // MARK: - Private helpers
+
+    /// Atomically captures the current serial and increments it for next use.
+    private func nextSerial() -> UInt64 {
+        serialLock.lock()
+        let current = publishSerial
+        publishSerial += 1
+        serialLock.unlock()
+        return current
+    }
+
+    /// Sends an API request with up to `maxRetries` attempts on network or 5xx errors.
+    private func sendWithRetry<E: APIotaEndpoint>(
+        endpoint: E,
+        attempt: Int,
+        callback: @escaping (Result<E.SuccessResponse, APIotaClientError>) -> Void
+    ) {
+        apiClient.sendRequest(for: endpoint) { [weak self] result in
+            guard let self = self else {
+                callback(result)
+                return
+            }
+
+            switch result {
+            case .success:
+                callback(result)
+            case .failure(let error):
+                let isRetryable: Bool
+                if case .unsuccessfulStatusCode(let statusCode, _) = error, statusCode >= 500 {
+                    isRetryable = true
+                } else if case .networkingError = error {
+                    isRetryable = true
+                } else {
+                    isRetryable = false
+                }
+
+                if isRetryable && attempt + 1 < self.maxRetries {
+                    let delayMs = 100 * (attempt + 1)
+                    DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(delayMs)) {
+                        self.sendWithRetry(endpoint: endpoint, attempt: attempt + 1, callback: callback)
+                    }
+                } else {
+                    callback(result)
+                }
+            }
+        }
+    }
+
+    // MARK: - Private and presence channel subscription authentication
+
+    /// Generates an authentication token that can be returned to a user client that is attempting
+    /// to subscribe to a private or presence `Channel`, which requires authentication with the server.
+    /// - Parameters:
+    ///   - channel: The channel for which to generate the authentication token.
+    ///   - socketId: The socket identifier for the connected user.
+    ///   - userData: The data to generate an authentication token for a subscription attempt
+    ///               to a presence channel.
+    ///               (This is required when autenticating a presence channel, and should otherwise
+    ///               be `nil`).
+    ///   - callback: A closure that returns a `Result` containing a `AuthenticationToken` for subscribing
+    ///               to a private or presence channel, or a `SockudoError` if the operation fails
+    ///               for some reason.
+    public func authenticate(channel: Channel,
+                             socketId: String,
+                             userData: PresenceUserData? = nil,
+                             callback: @escaping (Result<AuthenticationToken, SockudoError>) -> Void) {
+
+        do {
+            let token = try AuthenticationTokenService.authenticationToken(for: channel,
+                                                                           socketId: socketId,
+                                                                           userData: userData,
+                                                                           using: options)
+            callback(.success(token))
+        } catch {
+            callback(.failure(SockudoError(from: error)))
+        }
+    }
+}
