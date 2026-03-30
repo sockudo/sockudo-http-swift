@@ -1,27 +1,31 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+  push:
+    branches: [main]
+
+concurrency:
+  group: sockudo-http-swift-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-
+  lint:
     runs-on: macos-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Linting
-      run: swift run swiftlint
-    - name: Build
-      run: swift build -v
-    - name: Run tests
-      env:
-          TEST_APP_ID: ${{ secrets.CI_APP_ID }}
-          TEST_APP_KEY: ${{ secrets.CI_APP_KEY }}
-          TEST_APP_SECRET: ${{ secrets.CI_APP_SECRET }}
-          TEST_APP_CLUSTER: ${{ secrets.CI_APP_CLUSTER }}
-          TEST_ENCRYPTION_MASTER_KEY: ${{ secrets.CI_ENCRYPTION_MASTER_KEY }}
-      run: swift test -v
+      - uses: actions/checkout@v4
+
+      - name: Lint with SwiftLint
+        run: swift run swiftlint --strict
+
+  build-and-test:
+    runs-on: macos-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: swift build -v
+
+      - name: Run tests
+        run: swift test -v
