@@ -1,29 +1,15 @@
-# Pusher Channels Swift REST API Library
+# Sockudo Swift HTTP Server SDK
 
-![Build Status](https://github.com/pusher/pusher-http-swift/workflows/CI/badge.svg)
-[![Latest Release](https://img.shields.io/github/v/release/pusher/pusher-http-swift)](https://github.com/pusher/pusher-http-swift/releases)
-[![API Docs](https://img.shields.io/badge/Docs-here!-lightgrey)](https://pusher.github.io/pusher-http-swift/)
-[![Supported Platforms](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fpusher%2Fpusher-http-swift%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/pusher/pusher-http-swift)
-[![Swift Versions](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fpusher%2Fpusher-http-swift%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/pusher/pusher-http-swift)
-[![Twitter](https://img.shields.io/badge/twitter-@Pusher-blue.svg?style=flat)](http://twitter.com/Pusher)
-[![LICENSE](https://img.shields.io/github/license/pusher/pusher-http-swift)](https://github.com/pusher/pusher-http-swift/blob/main/LICENSE)
-
-A Swift library for interacting with the [Pusher Channels HTTP API](https://pusher.com/docs/channels/library_auth_reference/rest-api).
-
-Register for a [Pusher](https://pusher.com) account, set up a Channels app and use the app credentials app as shown below.
+A Swift server SDK for interacting with the [Sockudo](https://github.com/sockudo/sockudo) WebSocket server HTTP API. Publish events, authorize channels, authenticate users, and handle webhooks from your Swift applications.
 
 - [Supported platforms](#supported-platforms)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Documentation](#documentation)
-- [Reporting bugs and requesting features](#reporting-bugs-and-requesting-features)
-- [Credits](#credits)
 - [License](#license)
 
 ## Supported platforms
 
-- Swift 5.3 and above
-- Xcode 12.0 and above
+- Swift 5.9 and above
 
 ### Deployment targets
 
@@ -34,16 +20,16 @@ Register for a [Pusher](https://pusher.com) account, set up a Channels app and u
 
 ## Installation
 
-To integrate the library into your project using [Swift Package Manager](https://swift.org/package-manager/), you can add the library as a dependency in Xcode – see the [docs](https://developer.apple.com/documentation/xcode/adding_package_dependencies_to_your_app). The package repository URL is:
+To integrate the library using [Swift Package Manager](https://swift.org/package-manager/), add it as a dependency in Xcode via **File > Add Package Dependencies**. The package repository URL is:
 
-```bash
-https://github.com/pusher/pusher-http-swift.git
+```
+https://github.com/sockudo/sockudo-http-swift.git
 ```
 
-Alternatively, you can add the library as a dependency in your `Package.swift` file. For example:
+Alternatively, add it as a dependency in your `Package.swift` file:
 
 ```swift
-// swift-tools-version:5.3
+// swift-tools-version:5.9
 import PackageDescription
 
 let package = Package(
@@ -54,43 +40,57 @@ let package = Package(
             targets: ["YourPackage"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/pusher/pusher-http-swift.git",
-                 .upToNextMajor(from: "1.0.1")),
+        .package(url: "https://github.com/sockudo/sockudo-http-swift.git",
+                 .upToNextMajor(from: "1.0.0")),
     ],
     targets: [
         .target(
             name: "YourPackage",
-            dependencies: ["Pusher"]),
+            dependencies: [
+                .product(name: "SockudoHTTP", package: "sockudo-http-swift")
+            ]),
     ]
 )
 ```
 
-You will then need to include an `import Pusher` statement in any source files where you wish to use the library.
+Then include `import SockudoHTTP` in any source file where you want to use the library.
 
 ## Usage
 
-This section describes how to configure and use this library to act as an interface to your Pusher Channels app via the Channels HTTP API.
-
-**NOTES:**
-- Certain initializers or methods can throw an error if invalid parameters are provided, or an operation fails for some reason. **The use of `try!` in the code examples shown below is for brevity and is not recommended for a production application.**
+**Note:** Certain initializers or methods throw an error if invalid parameters are provided or an operation fails. The use of `try!` in the examples below is for brevity and is not recommended for production code.
 
 ### Configuration
 
-Use the credentials from your Pusher Channels application to create a new `Pusher` instance, which will act as your API client:
+Create a `Sockudo` instance using your app credentials and point it at your self-hosted server:
 
 ```swift
-let pusher = Pusher(options: try! PusherClientOptions(appId: 123456,
-                                                      key: "YOUR_APP_KEY",
-                                                      secret: "YOUR_APP_SECRET",
-                                                      encryptionMasterKey: "YOUR_BASE64_ENCODED_MASTER_KEY",
-                                                      cluster: "YOUR_APP_CLUSTER"))
+import SockudoHTTP
+
+let sockudo = Sockudo(options: try! SockudoClientOptions(
+    appId: 123456,
+    key: "YOUR_APP_KEY",
+    secret: "YOUR_APP_SECRET",
+    host: "127.0.0.1",
+    port: 6001
+))
 ```
-**NOTES:**
-- See the discussion in [End to end encryption](#end-to-end-encryption) for details on how to generate a secure `encryptionMasterKey`.
+
+For end-to-end encrypted channels, pass an `encryptionMasterKey`:
+
+```swift
+let sockudo = Sockudo(options: try! SockudoClientOptions(
+    appId: 123456,
+    key: "YOUR_APP_KEY",
+    secret: "YOUR_APP_SECRET",
+    host: "127.0.0.1",
+    port: 6001,
+    encryptionMasterKey: "YOUR_BASE64_ENCODED_MASTER_KEY"
+))
+```
 
 ### Triggering events
 
-To trigger an event on one or more channels, use the `trigger(event:callback:)` method.
+Use the `trigger(event:callback:)` method to trigger an event on one or more channels.
 
 #### A single channel
 
@@ -100,7 +100,7 @@ let publicEvent = try! Event(name: "my-event",
                              data: "hello world!",
                              channel: publicChannel)
 
-self.pusher.trigger(event: publicEvent) { result in
+sockudo.trigger(event: publicEvent) { result in
     switch result {
         case .success(let channelSummaries):
             // Inspect `channelSummaries`
@@ -113,14 +113,13 @@ self.pusher.trigger(event: publicEvent) { result in
 #### Multiple channels
 
 ```swift
-let publicChannelOne = Channel(name: "my-channel", type: .public)
-let publicChannelTwo = Channel(name: "my-other-channel", type: .public)
+let channelOne = Channel(name: "my-channel", type: .public)
+let channelTwo = Channel(name: "my-other-channel", type: .public)
 let multichannelEvent = try! Event(name: "my-multichannel-event",
                                    data: "hello world!",
-                                   channels: [publicChannelOne,
-                                              publicChannelTwo])
+                                   channels: [channelOne, channelTwo])
 
-self.pusher.trigger(event: publicEvent) { result in
+sockudo.trigger(event: multichannelEvent) { result in
     switch result {
         case .success(let channelSummaries):
             // Inspect `channelSummaries`
@@ -132,19 +131,17 @@ self.pusher.trigger(event: publicEvent) { result in
 
 #### Event batches
 
-It's also possible to send multiple events with a single API call (max 10 events per call on multi-tenant clusters) using the `trigger(events:callback:)` method:
+Send multiple events in a single API call (max 10 per call) using `trigger(events:callback:)`:
 
 ```swift
-let publicChannelOne = Channel(name: "my-channel", type: .public)
-let publicChannelTwo = Channel(name: "my-other-channel", type: .public)
 let eventOne = try! Event(name: "my-event",
                           data: "hello world!",
-                          channel: publicChannelOne)
+                          channel: Channel(name: "my-channel", type: .public))
 let eventTwo = try! Event(name: "my-other-event",
                           data: "hello world, again!",
-                          channel: publicChannelTwo)
+                          channel: Channel(name: "my-other-channel", type: .public))
 
-self.pusher.trigger(events: [eventOne, eventTwo]]) { result in
+sockudo.trigger(events: [eventOne, eventTwo]) { result in
     switch result {
         case .success(let channelInfoList):
             // Inspect `channelInfoList`
@@ -154,19 +151,17 @@ self.pusher.trigger(events: [eventOne, eventTwo]]) { result in
 }
 ```
 
-#### Excluding receipients
+#### Excluding recipients
 
-In some situations, you want to stop the client that broadcasts an event from receiving it. You can do this (by specifying its `socketId`)[https://pusher.com/docs/channels/server_api/excluding-event-recipients] when triggering an event:
+Prevent the triggering client from receiving its own event by specifying its `socketId`:
 
 ```swift
-let socketIdToExclude = "123.456"
-let publicChannel = Channel(name: "my-channel", type: .public)
 let excludedClientEvent = try! Event(name: "my-event",
                                      data: "hello world!",
-                                     channel: publicChannel,
-                                     socketId: socketIdToExclude)
+                                     channel: Channel(name: "my-channel", type: .public),
+                                     socketId: "123.456")
 
-self.pusher.trigger(event: excludedClientEvent) { result in
+sockudo.trigger(event: excludedClientEvent) { result in
     switch result {
         case .success(let channelSummaries):
             // Inspect `channelSummaries`
@@ -176,18 +171,17 @@ self.pusher.trigger(event: excludedClientEvent) { result in
 }
 ```
 
-#### Fetching channel attributes on triggering events [[EXPERIMENTAL](https://pusher.com/docs/lab#experimental-program)]
+#### Idempotency key
 
-It is possible to fetch attributes about the channel(s) that were triggered to with the `attributeOptions` parameter on `Event`. This works with both `trigger(…)` methods:
+Attach an idempotency key so the server deduplicates the event on retries:
 
 ```swift
-let publicChannel = Channel(name: "my-channel", type: .public)
-let publicEvent = try! Event(name: "my-event",
-                             data: "hello world!",
-                             channel: publicChannel,
-                             attributeOptions: [.subscriptionCount])
+let event = try! Event(name: "my-event",
+                       data: "hello world!",
+                       channel: Channel(name: "my-channel", type: .public),
+                       idempotencyKey: "unique-key-for-this-event")
 
-self.pusher.trigger(event: publicEvent) { result in
+sockudo.trigger(event: event) { result in
     switch result {
         case .success(let channelSummaries):
             // Inspect `channelSummaries`
@@ -197,45 +191,32 @@ self.pusher.trigger(event: publicEvent) { result in
 }
 ```
 
-**NOTES:**
-- The `trigger(…)` method is asynchronous. If you are not using this in a GUI application, you may need to use a semaphore:
+**Note:** The `trigger(…)` method is asynchronous. In non-GUI contexts, use a semaphore if you need to wait for the result:
 
 ```swift
-let publicChannel = Channel(name: "my-channel", type: .public)
-    let publicEvent = try! Event(name: "my-event",
-                                    data: "hello world!",
-                                    channel: publicChannel)
-
-    let sema = DispatchSemaphore(value: 0)
-    pusher.trigger(event: publicEvent) { result in
-        switch result {
-        case .success(let channelSummaries):
-            // Inspect `channelSummaries
-        case .failure(let error):
-            // Handle error
-        }
-        sema.signal()
-    }
-    sema.wait()
+let sema = DispatchSemaphore(value: 0)
+sockudo.trigger(event: publicEvent) { result in
+    // Handle result
+    sema.signal()
+}
+sema.wait()
 ```
 
 ### Authenticating channel subscriptions
 
-Users that attempt to subscribe to a private or presence channel must be first authenticated. An authentication token that can be returned to a user client that is attempting a subscription, which requires authentication with the server.
+Users attempting to subscribe to a private or presence channel must first be authenticated. Generate an authentication token to return to the subscribing client.
 
 #### Private channels
-
-To authenticate a user that is attempting to subscribe to a private channel, you can use the `authenticate(channel:socketId:callback:)` method:
 
 ```swift
 let userSocketId = "123.456"
 let privateChannel = Channel(name: "my-channel", type: .private)
 
-self.pusher.authenticate(channel: privateChannel,
-                         socketId: userSocketId) { result in
+sockudo.authenticate(channel: privateChannel,
+                     socketId: userSocketId) { result in
     switch result {
         case .success(let authToken):
-            // Inspect `authToken`
+            // Return `authToken` to the client
         case .failure(let error):
             // Handle error
     }
@@ -244,18 +225,36 @@ self.pusher.authenticate(channel: privateChannel,
 
 #### Presence channels
 
-To authenticate a user that is attempting to subscribe to a presence channel, you must provide a `userData` parameter to the same method:
+For presence channels, include user identity data:
 
 ```swift
-let userData = PresenceUserAuthData(userId: "USER_ID", userInfo: ["name": "Joe Bloggs"])
+let userData = PresenceUserAuthData(userId: "USER_ID", userInfo: ["name": "Jane Smith"])
 let presenceChannel = Channel(name: "my-channel", type: .presence)
 
-self.pusher.authenticate(channel: presenceChannel,
-                         socketId: "USER_SOCKET_ID",
-                         userData: userData) { result in
+sockudo.authenticate(channel: presenceChannel,
+                     socketId: "USER_SOCKET_ID",
+                     userData: userData) { result in
     switch result {
         case .success(let authToken):
-            // Inspect `authToken`
+            // Return `authToken` to the client
+        case .failure(let error):
+            // Handle error
+    }
+}
+```
+
+### User authentication
+
+Authenticate a user for server-to-user event delivery:
+
+```swift
+let userAuthData = UserAuthData(userId: "USER_ID", userInfo: ["name": "Jane Smith"])
+
+sockudo.authenticateUser(socketId: "USER_SOCKET_ID",
+                         userData: userAuthData) { result in
+    switch result {
+        case .success(let authToken):
+            // Return `authToken` to the client
         case .failure(let error):
             // Handle error
     }
@@ -264,10 +263,10 @@ self.pusher.authenticate(channel: presenceChannel,
 
 ### Verifying webhooks
 
-This library provides a way to verify that a received webhook request is genuine and was received from Pusher. Since a webhook endpoint is accessible to the global internet, verifying that webhook request originated from Pusher is important. Valid webhooks contain special headers which contain a copy of your application key and a HMAC signature of the webhook payload (i.e. its body):
+Verify that a received webhook request originated from your Sockudo server. Valid webhooks contain special headers with your application key and an HMAC signature of the payload:
 
 ```swift
-self.pusher.verifyWebhook(request: receivedWebhookRequest) { result in
+sockudo.verifyWebhook(request: receivedWebhookRequest) { result in
     switch result {
         case .success(let webhook):
             // Inspect `webhook`
@@ -277,64 +276,44 @@ self.pusher.verifyWebhook(request: receivedWebhookRequest) { result in
 }
 ```
 
-### End to end encryption
+### End-to-end encryption
 
-This library supports end-to-end encryption of your private channels. This means that only you and your connected clients will be able to read your messages. Pusher cannot decrypt them. You can enable this feature by following these steps:
+This library supports end-to-end encryption of private channels. Only you and your connected clients can read the messages.
 
-1. You should first set up private channels. This involves [creating an authentication endpoint on your server](https://pusher.com/docs/authenticating_users).
+1. Set up private channel authentication on your server.
 
-2. Next, generate your 32 byte master encryption key, encode it as Base-64 and pass it to the `PusherClientOptions` initializer. **This is secret and you should never share this with anyone, not even Pusher.**
+2. Generate a 32-byte master encryption key encoded as Base64. **Never share this key.**
 
-```bash
-openssl rand -base64 32
-```
+   ```bash
+   openssl rand -base64 32
+   ```
 
-```swift
-let options = try! PusherClientOptions(appId: 123456,
-                                       key: "YOUR_APP_KEY",
-                                       secret: "YOUR_APP_SECRET",
-                                       encryptionMasterKey: "<MASTER KEY GENERATED BY PREVIOUS COMMAND>",
-                                       cluster: "YOUR_APP_CLUSTER")
-```
+3. Pass the key to `SockudoClientOptions`:
 
-3. Channels where you wish to use end-to-end encryption should be of type `encrypted`.
+   ```swift
+   let options = try! SockudoClientOptions(
+       appId: 123456,
+       key: "YOUR_APP_KEY",
+       secret: "YOUR_APP_SECRET",
+       host: "127.0.0.1",
+       port: 6001,
+       encryptionMasterKey: "<MASTER KEY FROM PREVIOUS COMMAND>"
+   )
+   ```
 
-4. Subscribe to these channels in your client, and you're done! You can verify it is working by checking out the debug console on the [https://dashboard.pusher.com/](dashboard) and seeing the scrambled ciphertext.
+4. Use channels of type `encrypted`. Encrypted channel names must be prefixed with `private-encrypted-`.
 
-**Important note: This will **not** encrypt messages on channels that are not of type `encrypted`.**
+5. Subscribe to these channels in your client. Only clients with the matching key can decrypt messages.
 
-**Limitation:** you cannot trigger a single event on multiple channels in a call to the `trigger(event:callback:)` method, e.g:
-
-```swift
-let publicChannel = Channel(name: "my-channel", type: .public)
-let encryptedChannel = Channel(name: "my-other-channel", type: .encrypted)
-let event = try! Event(name: "my-event",
-                       data: "hello world!",
-                       channels: [publicChannel, encryptedChannel])
-
-self.pusher.trigger(event: event]) { result in
-    switch result {
-        case .success(let channelSummaries):
-            // Inspect `channelSummaries`
-        case .failure(let error):
-            // Handle error
-    }
-}
-```
-
-**Rationale:** the methods in this library map directly to individual Channels HTTP API requests. If we allowed triggering a single event on multiple channels (some encrypted, some unencrypted), then it would require two API requests: one where the event is encrypted to the encrypted channels, and one where the event is unencrypted for unencrypted channels.
+**Note:** You cannot trigger a single event on a mix of encrypted and unencrypted channels in one call. Each requires a separate API request.
 
 ### Application state queries
 
-Information about the current state of your Channels application can be fetched using the library. This includes the state of occupied channels, and users subscribed to presence channels.
-
-#### Fetch a list of occupied channels
-
-A list of any occupied channels for your Channels application can be fetched using the `channels(withFilter:attributeOptions:callback:)` method:
+#### Fetch all occupied channels
 
 ```swift
-// Fetching all occupied channels
-self.pusher.channels { result in
+// All occupied channels
+sockudo.channels { result in
     switch result {
         case .success(let channelSummaries):
             // Inspect `channelSummaries`
@@ -343,19 +322,9 @@ self.pusher.channels { result in
     }
 }
 
-// Fetching only occupied private channels
-self.pusher.channels(withFilter: .private) { result in
-    switch result {
-        case .success(let channelSummaries):
-            // Inspect `channelSummaries`
-        case .failure(let error):
-            // Handle error
-    }
-}
-
-// Fetching all occupied presence channels (with user counts)
-self.pusher.channels(withFilter: .presence,
-                     attributeOptions: .userCount) { result in
+// Only occupied presence channels (with user counts)
+sockudo.channels(withFilter: .presence,
+                 attributeOptions: .userCount) { result in
     switch result {
         case .success(let channelSummaries):
             // Inspect `channelSummaries`
@@ -367,36 +336,10 @@ self.pusher.channels(withFilter: .presence,
 
 #### Fetch information about a channel
 
-Information about a channel for your Channels application can be fetched using the `channelInfo(for:attributeOptions:callback:)` method:
-
 ```swift
-// Fetch information for a public channel
-let publicChannel = Channel(name: "my-channel", type: .public)
-self.pusher.channelInfo(for: publicChannel) { result in
-    switch result {
-        case .success(let channelInfo):
-            // Inspect `channelInfo`
-        case .failure(let error):
-            // Handle error
-    }
-}
-
-// Fetch information for a private channel (with subscription count)
-let privateChannel = Channel(name: "my-channel", type: .private)
-self.pusher.channelInfo(for: privateChannel,
-                        attributeOptions: [.subscriptionCount]) { result in
-    switch result {
-        case .success(let channelInfo):
-            // Inspect `channelInfo`
-        case .failure(let error):
-            // Handle error
-    }
-}
-
-// Fetch information for a presence channel (with user count)
 let presenceChannel = Channel(name: "my-channel", type: .presence)
-self.pusher.channelInfo(for: presenceChannel,
-                        attributeOptions: [.userCount]) { result in
+sockudo.channelInfo(for: presenceChannel,
+                    attributeOptions: [.userCount]) { result in
     switch result {
         case .success(let channelInfo):
             // Inspect `channelInfo`
@@ -406,16 +349,13 @@ self.pusher.channelInfo(for: presenceChannel,
 }
 ```
 
-**NOTES:**
-- If the specified channel is not occupied (i.e. it has no subscribers), then the returned `ChannelInfo` object will not contain any attributes (regardless of if they were requested) and its `isOccupied` property will be set to `false`.
+**Note:** If the channel is not occupied, the returned `ChannelInfo` will have `isOccupied` set to `false` and no attributes will be populated.
 
-#### Fetch a list of users subscribed to a presence channel
-
-A list of users subscribed to a presence channel for your Channels application can be fetched using the `users(for:callback:)` method:
+#### Fetch users subscribed to a presence channel
 
 ```swift
 let presenceChannel = Channel(name: "my-channel", type: .presence)
-self.pusher.users(for: presenceChannel) { result in
+sockudo.users(for: presenceChannel) { result in
     switch result {
         case .success(let users):
             // Inspect `users`
@@ -425,27 +365,6 @@ self.pusher.users(for: presenceChannel) { result in
 }
 ```
 
-## Documentation
-
-Full documentation of the library can be found in the [API docs](https://pusher.github.io/pusher-http-swift/).
-
-## Reporting bugs and requesting features
-
-Please ensure you use the relevant issue template when reporting a bug or requesting a new feature. Also please check first to see if there is an open issue that already covers your bug report or new feature request.
-
-## Credits
-
-This library is owned and maintained by [Pusher](https://pusher.com/). It was originally created by [Daniel Browne](https://github.com/danielrbrowne).
-
-It uses code from the following third-party repositories:
-
-- [APIota](https://github.com/danielrbrowne/APIota)
-- [AnyCodable](https://github.com/Flight-School/AnyCodable)
-- [swift-crypto](https://github.com/apple/swift-crypto)
-- [tweetnacl-swiftwrap](https://github.com/bitmark-inc/tweetnacl-swiftwrap)
-
-The individual licenses for these libraries are included in the corresponding Swift files.
-
 ## License
 
-The library is completely open source and released under the MIT license. See [LICENSE](https://github.com/pusher/pusher-http-swift/blob/main/LICENSE) for details if you want to use it in your own project(s).
+The library is completely open source and released under the MIT license.
