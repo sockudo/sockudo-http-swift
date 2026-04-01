@@ -108,3 +108,5 @@ final class ClientOptionsTests: XCTestCase {
         }
     }
 }
+
+// swiftlint:enable line_length
