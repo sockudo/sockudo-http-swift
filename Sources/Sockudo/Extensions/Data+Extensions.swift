@@ -28,6 +28,6 @@ extension Data {
     /// - Returns: The `String` representation of the receiver,
     ///            which is empty if the receiver was not UTF-8 encoded.
     func toString() -> String {
-        return String(decoding: self, as: UTF8.self)
+        return String(bytes: self, encoding: .utf8) ?? ""
     }
 }
