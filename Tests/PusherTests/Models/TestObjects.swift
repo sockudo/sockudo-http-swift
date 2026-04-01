@@ -230,3 +230,5 @@ struct TestObjects {
         }
     }
 }
+
+// swiftlint:enable force_try
