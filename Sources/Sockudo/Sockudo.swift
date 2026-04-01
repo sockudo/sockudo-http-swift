@@ -275,6 +275,7 @@ public class Sockudo {
             switch result {
             case .success:
                 callback(result)
+
             case .failure(let error):
                 let isRetryable: Bool
                 if case .unsuccessfulStatusCode(let statusCode, _) = error, statusCode >= 500 {
