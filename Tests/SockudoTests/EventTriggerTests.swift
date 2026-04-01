@@ -74,7 +74,9 @@ final class EventTriggerTests: XCTestCase {
                               channel: TestObjects.Channels.public,
                               idempotencyKey: "unique-key-789")
         let encodedData = try JSONEncoder().encode(event)
-        let json = try JSONSerialization.jsonObject(with: encodedData) as! [String: Any]
+        guard let json = try JSONSerialization.jsonObject(with: encodedData) as? [String: Any] else {
+            return XCTFail("Expected JSON object")
+        }
         XCTAssertEqual(json["idempotency_key"] as? String, "unique-key-789")
     }
 
@@ -83,7 +85,9 @@ final class EventTriggerTests: XCTestCase {
                               data: TestObjects.Events.eventData,
                               channel: TestObjects.Channels.public)
         let encodedData = try JSONEncoder().encode(event)
-        let json = try JSONSerialization.jsonObject(with: encodedData) as! [String: Any]
+        guard let json = try JSONSerialization.jsonObject(with: encodedData) as? [String: Any] else {
+            return XCTFail("Expected JSON object")
+        }
         XCTAssertTrue(json["idempotency_key"] is NSNull)
     }
 
