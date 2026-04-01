@@ -34,13 +34,16 @@ extension ChannelFilter {
         switch self {
         case .any:
             return ""
+
         case .custom(prefix: let customPrefix):
             return customPrefix
 
         case .encrypted:
             return "private-encrypted-"
+
         case .private:
             return "private-"
+
         case .presence:
             return "presence-"
         }
@@ -52,7 +55,7 @@ extension ChannelFilter {
         case .any:
             return nil
 
-        case .custom(prefix: _), .encrypted, .private, .presence:
+        case .custom, .encrypted, .private, .presence:
             return URLQueryItem(name: "filter_by_prefix", value: channelPrefix)
         }
     }
