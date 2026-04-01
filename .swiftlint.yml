@@ -5,7 +5,6 @@ excluded:
   - Tests/LinuxMain.swift
 
 opt_in_rules:
-  - anyobject_protocol
   - closure_end_indentation
   - closure_spacing
   - explicit_init
