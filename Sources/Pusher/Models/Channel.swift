@@ -85,6 +85,7 @@ public struct Channel: ChannelDescription {
         switch type {
         case .encrypted, .presence, .private:
             return "\(type.rawValue)-\(name)"
+
         case .public:
             return name
         }
