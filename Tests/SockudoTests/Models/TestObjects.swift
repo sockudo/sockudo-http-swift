@@ -231,8 +231,9 @@ struct TestObjects {
             request.setValue(sockudoKeyHeaderValue, forHTTPHeaderField: WebhookService.xSockudoKeyHeader)
 
             if sockudoSignatureHeaderValue != nil, request.httpBody != nil {
-                let signature = CryptoService.sha256HMAC(for: request.httpBody!,
-                                                         using: sockudoSignatureHeaderValue!.toData()).hexEncodedString()
+                let hmac = CryptoService.sha256HMAC(for: request.httpBody!,
+                                                    using: sockudoSignatureHeaderValue!.toData())
+                let signature = hmac.hexEncodedString()
                 request.setValue(signature, forHTTPHeaderField: WebhookService.xSockudoSignatureHeader)
             }
 
@@ -240,3 +241,5 @@ struct TestObjects {
         }
     }
 }
+
+// swiftlint:enable force_try
