@@ -27,5 +27,7 @@ struct APIClient: APIotaClient {
 extension APIClient {
 
     /// The default Channels HTTP API headers that should be appended to each `URLRequest` made by the receiver.
-    static let defaultHeaders: HTTPHeaders = [HTTPHeader("X-Sockudo-Library"): "sockudo-http-swift \(SDKVersion.current)"]
+    static let defaultHeaders: HTTPHeaders = [
+        HTTPHeader("X-Sockudo-Library"): "sockudo-http-swift \(SDKVersion.current)"
+    ]
 }
