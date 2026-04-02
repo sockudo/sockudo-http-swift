@@ -47,13 +47,15 @@ let package = Package(
         .target(
             name: "YourPackage",
             dependencies: [
-                .product(name: "SockudoHTTP", package: "sockudo-http-swift")
+                .product(name: "Pusher", package: "sockudo-http-swift")
             ]),
     ]
 )
 ```
 
-Then include `import SockudoHTTP` in any source file where you want to use the library.
+Then include `import Pusher` in any source file where you want to use the library.
+
+The repository is Sockudo-branded, but the Swift package currently keeps the `Pusher` product/module name for compatibility with existing integrations.
 
 ## Usage
 
@@ -64,7 +66,7 @@ Then include `import SockudoHTTP` in any source file where you want to use the l
 Create a `Sockudo` instance using your app credentials and point it at your self-hosted server:
 
 ```swift
-import SockudoHTTP
+import Pusher
 
 let sockudo = Sockudo(options: try! SockudoClientOptions(
     appId: 123456,
