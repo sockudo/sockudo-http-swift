@@ -14,7 +14,10 @@ let package = Package(
   products: [
     .library(
       name: "Pusher",
-      targets: ["Pusher"])
+      targets: ["Pusher"]),
+    .library(
+      name: "Sockudo",
+      targets: ["Sockudo"]),
   ],
   dependencies: [
     // Source code linting
@@ -48,8 +51,19 @@ let package = Package(
         .product(name: "Crypto", package: "swift-crypto"),
         "TweetNacl",
       ]),
+    .target(
+      name: "Sockudo",
+      dependencies: [
+        "APIota",
+        "AnyCodable",
+        .product(name: "Crypto", package: "swift-crypto"),
+        "TweetNacl",
+      ]),
     .testTarget(
       name: "PusherTests",
       dependencies: ["Pusher"]),
+    .testTarget(
+      name: "SockudoTests",
+      dependencies: ["Sockudo"]),
   ]
 )

@@ -47,15 +47,20 @@ let package = Package(
         .target(
             name: "YourPackage",
             dependencies: [
-                .product(name: "Pusher", package: "sockudo-http-swift")
+                .product(name: "Sockudo", package: "sockudo-http-swift")
             ]),
     ]
 )
 ```
 
-Then include `import Pusher` in any source file where you want to use the library.
+Then include `import Sockudo` in any source file where you want to use the native Sockudo module.
 
-The repository is Sockudo-branded, but the Swift package currently keeps the `Pusher` product/module name for compatibility with existing integrations.
+This package exports both products:
+
+- `Sockudo`: native Sockudo module and recommended default for new integrations
+- `Pusher`: compatibility module for existing Pusher-shaped integrations
+
+Examples in this README use the native `Sockudo` module. If you are migrating an existing Pusher integration, you can depend on `.product(name: "Pusher", package: "sockudo-http-swift")` and keep `import Pusher`.
 
 ## Usage
 
@@ -66,7 +71,7 @@ The repository is Sockudo-branded, but the Swift package currently keeps the `Pu
 Create a `Sockudo` instance using your app credentials and point it at your self-hosted server:
 
 ```swift
-import Pusher
+import Sockudo
 
 let sockudo = Sockudo(options: try! SockudoClientOptions(
     appId: 123456,
