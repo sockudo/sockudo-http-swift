@@ -7,56 +7,53 @@ import Foundation
 /// that allows filtering based on custom naming schemes.
 public enum ChannelFilter {
 
-    /// A filter that returns any channel that can be subscribed to.
-    ///
-    /// The channels that are returned by this filter could be any of `ChannelType`.
-    case any
+  /// A filter that returns any channel that can be subscribed to.
+  ///
+  /// The channels that are returned by this filter could be any of `ChannelType`.
+  case any
 
-    /// A custom filter, based on a provided channel name `prefix` string.
-    ///
-    /// This can be used as a filter for a particular group of channels, related by a common naming prefix scheme.
-    case custom(prefix: String)
+  /// A custom filter, based on a provided channel name `prefix` string.
+  ///
+  /// This can be used as a filter for a particular group of channels, related by a common naming prefix scheme.
+  case custom(prefix: String)
 
-    /// A filter that returns all occupied encrypted channels.
-    case encrypted
+  /// A filter that returns all occupied encrypted channels.
+  case encrypted
 
-    /// A filter that returns all occupied private channels.
-    case `private`
+  /// A filter that returns all occupied private channels.
+  case `private`
 
-    /// A filter that returns all occupied presence channels.
-    case presence
+  /// A filter that returns all occupied presence channels.
+  case presence
 }
 
 extension ChannelFilter {
 
-    /// A channel name prefix `String`, depending on the `ChannelFilter` value.
-    private var channelPrefix: String {
-        switch self {
-        case .any:
-            return ""
+  /// A channel name prefix `String`, depending on the `ChannelFilter` value.
+  private var channelPrefix: String {
+    switch self {
+    case .any:
+      return ""
+    case .custom(prefix: let customPrefix):
+      return customPrefix
 
-        case .custom(prefix: let customPrefix):
-            return customPrefix
-
-        case .encrypted:
-            return "private-encrypted-"
-
-        case .private:
-            return "private-"
-
-        case .presence:
-            return "presence-"
-        }
+    case .encrypted:
+      return "private-encrypted-"
+    case .private:
+      return "private-"
+    case .presence:
+      return "presence-"
     }
+  }
 
-    /// A `URLQueryItem` that can be used as a filter when requesting info on occupied channels.
-    var queryItem: URLQueryItem? {
-        switch self {
-        case .any:
-            return nil
+  /// A `URLQueryItem` that can be used as a filter when requesting info on occupied channels.
+  var queryItem: URLQueryItem? {
+    switch self {
+    case .any:
+      return nil
 
-        case .custom, .encrypted, .private, .presence:
-            return URLQueryItem(name: "filter_by_prefix", value: channelPrefix)
-        }
+    case .custom(prefix: _), .encrypted, .private, .presence:
+      return URLQueryItem(name: "filter_by_prefix", value: channelPrefix)
     }
+  }
 }

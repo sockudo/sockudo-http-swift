@@ -4,41 +4,42 @@ import Foundation
 /// Triggers an event on one or more channels.
 struct TriggerEventEndpoint: APIotaCodableEndpoint {
 
-    typealias SuccessResponse = ChannelSummaryListAPIResponse
-    typealias ErrorResponse = Data
-    typealias Body = Event
+  typealias SuccessResponse = ChannelSummaryListAPIResponse
+  typealias ErrorResponse = Data
+  typealias Body = Event
 
-    let encoder: JSONEncoder = JSONEncoder.iso8601Ordered
+  let encoder: JSONEncoder = JSONEncoder.iso8601Ordered
 
-    var headers: HTTPHeaders? {
+  var headers: HTTPHeaders? {
 
-        var headers = APIClient.defaultHeaders
-        headers.replaceOrAdd(header: .contentType, value: HTTPMediaType.json.toString())
+    var headers = APIClient.defaultHeaders
+    headers.replaceOrAdd(header: .contentType, value: HTTPMediaType.json.toString())
 
-        return headers
-    }
+    return headers
+  }
 
-    let httpBody: Event?
+  let httpBody: Event?
 
-    let httpMethod: HTTPMethod = .POST
+  let httpMethod: HTTPMethod = .POST
 
-    var path: String {
+  var path: String {
 
-        return "/apps/\(options.appId)/events"
-    }
+    return "/apps/\(options.appId)/events"
+  }
 
-    var queryItems: [URLQueryItem]? {
+  var queryItems: [URLQueryItem]? {
 
-        // Add array of `URLQueryItem` for authenticating the `URLRequest`
-        let authInfo = AuthInfo(httpBody: httpBody,
-                                httpMethod: httpMethod.rawValue,
-                                path: path,
-                                key: options.key,
-                                secret: options.secret)
+    // Add array of `URLQueryItem` for authenticating the `URLRequest`
+    let authInfo = AuthInfo(
+      httpBody: httpBody,
+      httpMethod: httpMethod.rawValue,
+      path: path,
+      key: options.key,
+      secret: options.secret)
 
-        return authInfo.queryItems
-    }
+    return authInfo.queryItems
+  }
 
-    /// Configuration options which are used when initializing the `URLRequest`.
-    let options: PusherClientOptions
+  /// Configuration options which are used when initializing the `URLRequest`.
+  let options: PusherClientOptions
 }
