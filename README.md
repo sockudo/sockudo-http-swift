@@ -372,6 +372,25 @@ sockudo.users(for: presenceChannel) { result in
 }
 ```
 
+#### Fetch channel history
+
+```swift
+let channel = Channel(name: "my-channel", type: .public)
+sockudo.history(
+    for: channel,
+    options: .init(limit: 50, direction: "newest_first")
+) { result in
+    print(result)
+}
+
+sockudo.history(
+    for: channel,
+    options: .init(cursor: "opaque-cursor-from-previous-page")
+) { result in
+    print(result)
+}
+```
+
 ## License
 
 The library is completely open source and released under the MIT license.

@@ -147,6 +147,21 @@ public class Sockudo {
     }
   }
 
+  public func history(
+    for channel: Channel,
+    options fetchOptions: ChannelHistoryFetchOptions = .init(),
+    callback: @escaping (Result<ChannelHistoryPage, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetChannelHistoryEndpoint(
+        channel: channel,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
   // MARK: - Idempotency
 
   /// Generates a unique idempotency key using a UUID string.

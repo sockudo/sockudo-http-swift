@@ -116,6 +116,22 @@ public class Pusher {
     }
   }
 
+  /// Fetches durable history for a given channel.
+  public func history(
+    for channel: Channel,
+    options fetchOptions: ChannelHistoryFetchOptions = .init(),
+    callback: @escaping (Result<ChannelHistoryPage, PusherError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetChannelHistoryEndpoint(
+        channel: channel,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ PusherError(from: $0) }))
+    }
+  }
+
   // MARK: - Triggering events
 
   /// Triggers an `Event` on one or more `Channel` instances.
