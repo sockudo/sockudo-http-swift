@@ -10,11 +10,11 @@ struct TestObjects {
 
   struct Client {
 
-    static let testAppId = Int(ProcessInfo.processInfo.environment["TEST_APP_ID"]!)!
-    static let testKey = ProcessInfo.processInfo.environment["TEST_APP_KEY"]!
-    static let testSecret = ProcessInfo.processInfo.environment["TEST_APP_SECRET"]!
-    static let testMasterKey = ProcessInfo.processInfo.environment["TEST_ENCRYPTION_MASTER_KEY"]!
-    static let testCluster = ProcessInfo.processInfo.environment["TEST_APP_CLUSTER"]!
+    static let testAppId = Int(ProcessInfo.processInfo.environment["TEST_APP_ID"] ?? "123456")!
+    static let testKey = ProcessInfo.processInfo.environment["TEST_APP_KEY"] ?? "auth_key"
+    static let testSecret = ProcessInfo.processInfo.environment["TEST_APP_SECRET"] ?? "auth_secret"
+    static let testMasterKey = ProcessInfo.processInfo.environment["TEST_ENCRYPTION_MASTER_KEY"] ?? "hsRSqt4JEOd4bu2ww+F7e94BZsMBmELIUMHfhpTml2w="
+    static let testCluster = ProcessInfo.processInfo.environment["TEST_APP_CLUSTER"] ?? "eu"
 
     // MARK: Shared client
 

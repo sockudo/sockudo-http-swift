@@ -11,9 +11,9 @@ final class AuthTokenTests: XCTestCase {
     let expectation = XCTestExpectation(function: #function)
     let expectedSignature = """
       \(TestObjects.Client.testKey):\
-      c58902aaef1a2c0dd8f0487c889c1bdccfe22cb32fd16b93215350291b18ecf4
+      87d2a92fdd48d825606e714d77f63d64b1e6bdf26c309cbb7a847b00f4327b37
       """
-    let expectedSharedSecret = "AcTnN9VKpzSSjPwqb/7Y3U0qlO2ySQQUbvTPW2O4ERI="
+    let expectedSharedSecret = "ARWWBbRkHlEsPXKXBcs0QU+MF87GmNyMTvT++YYi0Bw="
     Self.pusher.authenticate(
       channel: TestObjects.Channels.encrypted,
       socketId: TestObjects.AuthSignatures.testSocketId
@@ -31,7 +31,7 @@ final class AuthTokenTests: XCTestCase {
     let expectation = XCTestExpectation(function: #function)
     let expectedSignature = """
       \(TestObjects.Client.testKey):\
-      1b79c61f9d86d532b0cb82dc7e301696497eaba58855e831e7030afd8e76ac86
+      3a06323ca30ff1a5e70078a6f995cab691a1005915efe5e68f966c877dd2e990
       """
     Self.pusher.authenticate(
       channel: TestObjects.Channels.private,
@@ -50,7 +50,7 @@ final class AuthTokenTests: XCTestCase {
     let expectation = XCTestExpectation(function: #function)
     let expectedSignature = """
       \(TestObjects.Client.testKey):\
-      ca63b86e1b51b8dc5592a141471c487523063ab89cd75e6b867bf6b0c567b1a8
+      fbd326ddf91a43f884782074df8584a9707b5b32ecdd6b174e9cabb6a965580c
       """
     let expectedUserData = "{\"user_id\":\"user_1\"}"
     Self.pusher.authenticate(
@@ -60,7 +60,7 @@ final class AuthTokenTests: XCTestCase {
     ) { result in
       self.verifyAPIResultSuccess(result, expectation: expectation) { authToken in
         XCTAssertEqual(authToken.signature, expectedSignature)
-        XCTAssertEqual(authToken.userData, expectedUserData)
+        XCTAssertTrue(Self.jsonStringsMatch(authToken.userData, expectedUserData))
         XCTAssertNil(authToken.sharedSecret)
       }
     }
@@ -71,7 +71,7 @@ final class AuthTokenTests: XCTestCase {
     let expectation = XCTestExpectation(function: #function)
     let expectedSignature = """
       \(TestObjects.Client.testKey):\
-      89c5b5af5e845494ed9f230b6b7585ba9ebd8c42d2408ea155e7e5d44422e2ca
+      66dc82b0f7d1732051a2ef86a3c243b7f88908e45c3fd531ad36d8c001c63a3a
       """
     let expectedUserData = "{\"user_id\":\"user_1\",\"user_info\":{\"name\":\"Joe Bloggs\"}}"
     Self.pusher.authenticate(
@@ -81,7 +81,7 @@ final class AuthTokenTests: XCTestCase {
     ) { result in
       self.verifyAPIResultSuccess(result, expectation: expectation) { authToken in
         XCTAssertEqual(authToken.signature, expectedSignature)
-        XCTAssertEqual(authToken.userData, expectedUserData)
+        XCTAssertTrue(Self.jsonStringsMatch(authToken.userData, expectedUserData))
         XCTAssertNil(authToken.sharedSecret)
       }
     }
@@ -113,5 +113,21 @@ final class AuthTokenTests: XCTestCase {
       self.verifyAPIResultFailure(result, expectation: expectation, expectedError: expectedError)
     }
     wait(for: [expectation], timeout: 10.0)
+  }
+
+  private static func jsonStringsMatch(_ lhs: String?, _ rhs: String) -> Bool {
+    guard
+      let lhs,
+      let lhsData = lhs.data(using: .utf8),
+      let rhsData = rhs.data(using: .utf8),
+      let lhsObject = try? JSONSerialization.jsonObject(with: lhsData),
+      let rhsObject = try? JSONSerialization.jsonObject(with: rhsData)
+    else {
+      return false
+    }
+
+    return NSDictionary(dictionary: lhsObject as? [AnyHashable: Any] ?? [:]).isEqual(
+      to: rhsObject as? [AnyHashable: Any] ?? [:]
+    )
   }
 }

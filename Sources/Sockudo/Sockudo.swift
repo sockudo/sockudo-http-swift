@@ -162,6 +162,36 @@ public class Sockudo {
     }
   }
 
+  public func presenceHistory(
+    for channel: Channel,
+    options fetchOptions: PresenceHistoryFetchOptions = .init(),
+    callback: @escaping (Result<PresenceHistoryPage, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetPresenceHistoryEndpoint(
+        channel: channel,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func presenceSnapshot(
+    for channel: Channel,
+    options fetchOptions: PresenceSnapshotFetchOptions = .init(),
+    callback: @escaping (Result<PresenceSnapshot, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetPresenceSnapshotEndpoint(
+        channel: channel,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
   // MARK: - Idempotency
 
   /// Generates a unique idempotency key using a UUID string.
@@ -303,10 +333,10 @@ public class Sockudo {
   }
 
   /// Sends an API request with up to `maxRetries` attempts on network or 5xx errors.
-  private func sendWithRetry<E: APIotaEndpoint>(
+  private func sendWithRetry<E: APIotaCodableEndpoint>(
     endpoint: E,
     attempt: Int,
-    callback: @escaping (Result<E.SuccessResponse, APIotaClientError>) -> Void
+    callback: @escaping (Result<E.SuccessResponse, Error>) -> Void
   ) {
     apiClient.sendRequest(for: endpoint) { [weak self] result in
       guard let self = self else {
@@ -319,10 +349,15 @@ public class Sockudo {
         callback(result)
       case .failure(let error):
         let isRetryable: Bool
-        if case .unsuccessfulStatusCode(let statusCode, _) = error, statusCode >= 500 {
-          isRetryable = true
-        } else if case .networkingError = error {
-          isRetryable = true
+        if let apiError = error as? APIotaClientError<Data> {
+          switch apiError {
+          case .failedResponse(statusCode: let statusCode, errorResponseBody: _) where statusCode.rawValue >= 500:
+            isRetryable = true
+          case .internalError:
+            isRetryable = true
+          default:
+            isRetryable = false
+          }
         } else {
           isRetryable = false
         }

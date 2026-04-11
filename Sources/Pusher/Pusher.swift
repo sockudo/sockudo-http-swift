@@ -132,6 +132,36 @@ public class Pusher {
     }
   }
 
+  public func presenceHistory(
+    for channel: Channel,
+    options fetchOptions: PresenceHistoryFetchOptions = .init(),
+    callback: @escaping (Result<PresenceHistoryPage, PusherError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetPresenceHistoryEndpoint(
+        channel: channel,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ PusherError(from: $0) }))
+    }
+  }
+
+  public func presenceSnapshot(
+    for channel: Channel,
+    options fetchOptions: PresenceSnapshotFetchOptions = .init(),
+    callback: @escaping (Result<PresenceSnapshot, PusherError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetPresenceSnapshotEndpoint(
+        channel: channel,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ PusherError(from: $0) }))
+    }
+  }
+
   // MARK: - Triggering events
 
   /// Triggers an `Event` on one or more `Channel` instances.

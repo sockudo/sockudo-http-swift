@@ -7,6 +7,10 @@ final class EventTriggerTests: XCTestCase {
 
   private static let sockudo = TestObjects.Client.shared
 
+  override func setUpWithError() throws {
+    try LiveTestSupport.requireLiveConfig()
+  }
+
   // MARK: - POST single event tests
 
   func testPostEventToChannelSucceedsForEncryptedChannel() throws {

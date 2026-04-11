@@ -7,6 +7,10 @@ final class AppStateQueryTests: XCTestCase {
 
   private static let sockudo = TestObjects.Client.shared
 
+  override func setUpWithError() throws {
+    try LiveTestSupport.requireLiveConfig()
+  }
+
   // MARK: - GET channels tests
 
   func testGetChannelsSucceeds() {

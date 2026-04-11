@@ -391,6 +391,32 @@ sockudo.history(
 }
 ```
 
+#### Fetch presence history and snapshots
+
+```swift
+let presenceChannel = Channel(name: "my-channel", type: .presence)
+sockudo.presenceHistory(
+    for: presenceChannel,
+    options: .init(limit: 50, direction: "newest_first")
+) { result in
+    print(result)
+}
+
+sockudo.presenceHistory(
+    for: presenceChannel,
+    options: .init(cursor: "opaque-cursor-from-previous-page")
+) { result in
+    print(result)
+}
+
+sockudo.presenceSnapshot(
+    for: presenceChannel,
+    options: .init(atSerial: 4)
+) { result in
+    print(result)
+}
+```
+
 ## License
 
 The library is completely open source and released under the MIT license.

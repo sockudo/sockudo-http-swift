@@ -17,7 +17,9 @@ final class ClientOptionsTests: XCTestCase {
       TestObjects.ClientOptions.testEncryptionMasterKey)
     XCTAssertEqual(
       TestObjects.ClientOptions.withCluster.cluster, TestObjects.ClientOptions.testCluster)
-    XCTAssertEqual(TestObjects.ClientOptions.withCluster.host, "api-\(self.cluster!).sockudo.io")
+    XCTAssertEqual(
+      TestObjects.ClientOptions.withCluster.host,
+      "api-\(TestObjects.ClientOptions.testCluster).sockudo.io")
     XCTAssertNil(TestObjects.ClientOptions.withCluster.httpProxy)
     XCTAssertEqual(TestObjects.ClientOptions.withCluster.port, 443)
     XCTAssertEqual(TestObjects.ClientOptions.withCluster.scheme, "https")
