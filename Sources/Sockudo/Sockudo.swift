@@ -1,3 +1,4 @@
+import AnyCodable
 import APIota
 import Foundation
 import Security
@@ -156,6 +157,92 @@ public class Sockudo {
       for: GetChannelHistoryEndpoint(
         channel: channel,
         fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func getMessage(
+    for channel: Channel,
+    messageSerial: String,
+    callback: @escaping (Result<GetMessageResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetMessageEndpoint(
+        channel: channel,
+        messageSerial: messageSerial,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func getMessageVersions(
+    for channel: Channel,
+    messageSerial: String,
+    options fetchOptions: MessageVersionsFetchOptions = .init(),
+    callback: @escaping (Result<MessageVersionsPage, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetMessageVersionsEndpoint(
+        channel: channel,
+        messageSerial: messageSerial,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func updateMessage(
+    for channel: Channel,
+    messageSerial: String,
+    body: [String: Any],
+    callback: @escaping (Result<MutationResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: MutateMessageEndpoint(
+        httpBody: AnyCodable(body),
+        channel: channel,
+        messageSerial: messageSerial,
+        operation: "update",
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func deleteMessage(
+    for channel: Channel,
+    messageSerial: String,
+    body: [String: Any] = [:],
+    callback: @escaping (Result<MutationResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: MutateMessageEndpoint(
+        httpBody: AnyCodable(body),
+        channel: channel,
+        messageSerial: messageSerial,
+        operation: "delete",
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func appendMessage(
+    for channel: Channel,
+    messageSerial: String,
+    body: [String: Any],
+    callback: @escaping (Result<MutationResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: MutateMessageEndpoint(
+        httpBody: AnyCodable(body),
+        channel: channel,
+        messageSerial: messageSerial,
+        operation: "append",
         options: options)
     ) { result in
       callback(result.mapError({ SockudoError(from: $0) }))
