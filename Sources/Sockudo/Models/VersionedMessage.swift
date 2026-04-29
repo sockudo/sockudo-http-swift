@@ -85,3 +85,49 @@ public struct MutationResponse: Decodable, Equatable {
     case status
   }
 }
+
+public struct PublishAnnotationResponse: Decodable, Equatable {
+  public let annotationSerial: String
+}
+
+public struct DeleteAnnotationResponse: Decodable, Equatable {
+  public let annotationSerial: String
+  public let deletedAnnotationSerial: String
+}
+
+public struct AnnotationEvent: Decodable, Equatable {
+  public let action: String
+  public let id: String?
+  public let serial: String
+  public let messageSerial: String
+  public let type: String
+  public let name: String?
+  public let clientID: String?
+  public let count: UInt64?
+  public let data: AnyCodable?
+  public let encoding: String?
+  public let timestamp: Int64?
+
+  enum CodingKeys: String, CodingKey {
+    case action
+    case id
+    case serial
+    case messageSerial
+    case type
+    case name
+    case clientID = "clientId"
+    case count
+    case data
+    case encoding
+    case timestamp
+  }
+}
+
+public struct AnnotationEventsPage: Decodable, Equatable {
+  public let channel: String
+  public let messageSerial: String
+  public let limit: UInt
+  public let hasMore: Bool
+  public let nextCursor: String?
+  public let items: [AnnotationEvent]
+}
