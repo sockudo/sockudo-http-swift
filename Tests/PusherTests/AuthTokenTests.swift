@@ -71,7 +71,7 @@ final class AuthTokenTests: XCTestCase {
     let expectation = XCTestExpectation(function: #function)
     let expectedSignature = """
       \(TestObjects.Client.testKey):\
-      66dc82b0f7d1732051a2ef86a3c243b7f88908e45c3fd531ad36d8c001c63a3a
+      18ec1dbc58c9d048c917e44690abf2c87ae954743cdbc7967682b396d36210f4
       """
     let expectedUserData = "{\"user_id\":\"user_1\",\"user_info\":{\"name\":\"Joe Bloggs\"}}"
     Self.pusher.authenticate(
