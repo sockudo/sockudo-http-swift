@@ -249,6 +249,59 @@ public class Sockudo {
     }
   }
 
+  public func publishAnnotation(
+    for channel: Channel,
+    messageSerial: String,
+    body: [String: Any],
+    callback: @escaping (Result<PublishAnnotationResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PublishAnnotationEndpoint(
+        httpBody: AnyCodable(body),
+        channel: channel,
+        messageSerial: messageSerial,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func deleteAnnotation(
+    for channel: Channel,
+    messageSerial: String,
+    annotationSerial: String,
+    socketID: String? = nil,
+    callback: @escaping (Result<DeleteAnnotationResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: DeleteAnnotationEndpoint(
+        channel: channel,
+        messageSerial: messageSerial,
+        annotationSerial: annotationSerial,
+        socketID: socketID,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func listAnnotations(
+    for channel: Channel,
+    messageSerial: String,
+    options fetchOptions: AnnotationEventsFetchOptions = .init(),
+    callback: @escaping (Result<AnnotationEventsPage, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: GetAnnotationsEndpoint(
+        channel: channel,
+        messageSerial: messageSerial,
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
   public func presenceHistory(
     for channel: Channel,
     options fetchOptions: PresenceHistoryFetchOptions = .init(),
