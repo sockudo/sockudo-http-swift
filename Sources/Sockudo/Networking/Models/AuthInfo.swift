@@ -78,6 +78,8 @@ struct AuthInfo: AuthInfoRecord {
     // Initialize the `String` representation of the API request to sign against
     var components = URLComponents()
     components.queryItems = self.queryItemsToSign
+      .map { URLQueryItem(name: $0.name.lowercased(), value: $0.value) }
+      .sorted { $0.name < $1.name }
     let stringToSign = "\(httpMethod)\n\(path)\n\(components.query!)"
 
     // Compute the `auth_signature` SHA256 HMAC digest, using the `secret`

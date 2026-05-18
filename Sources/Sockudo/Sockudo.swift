@@ -332,6 +332,247 @@ public class Sockudo {
     }
   }
 
+  // MARK: - Push helpers
+
+  public func activateDevice(
+    body: [String: Any],
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(for: PushEndpointFactory.activateDevice(body: body, options: options)) {
+      result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func createDeviceActivation(
+    body: [String: Any],
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    activateDevice(body: body, callback: callback)
+  }
+
+  public func updateDeviceRegistration(
+    body: [String: Any],
+    deviceIdentityToken: String,
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.updateDeviceRegistration(
+        body: body,
+        deviceIdentityToken: deviceIdentityToken,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func listDeviceRegistrations(
+    options fetchOptions: PushCursorFetchOptions = .init(),
+    callback: @escaping (Result<PushListResponse<PushObjectResponse>, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.listDeviceRegistrations(fetchOptions: fetchOptions, options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func getDeviceRegistration(
+    deviceID: String,
+    deviceIdentityToken: String? = nil,
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.getDeviceRegistration(
+        deviceID: deviceID,
+        deviceIdentityToken: deviceIdentityToken,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func deleteDeviceRegistration(
+    deviceID: String,
+    deviceIdentityToken: String? = nil,
+    callback: @escaping (Result<PushNoContentResponse, SockudoError>) -> Void
+  ) {
+    sendNoContentRequest(
+      endpoint: PushEndpointFactory.deleteDeviceRegistration(
+        deviceID: deviceID,
+        deviceIdentityToken: deviceIdentityToken,
+        options: options),
+      callback: callback)
+  }
+
+  public func removeDeviceRegistrationsByClient(
+    clientID: String,
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.removeDeviceRegistrationsByClient(
+        clientID: clientID,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func upsertChannelPushSubscription(
+    body: [String: Any],
+    deviceIdentityToken: String? = nil,
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.upsertChannelPushSubscription(
+        body: body,
+        deviceIdentityToken: deviceIdentityToken,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func listChannelPushSubscriptions(
+    options fetchOptions: PushSubscriptionFetchOptions = .init(),
+    deviceIdentityToken: String? = nil,
+    callback: @escaping (Result<PushListResponse<PushObjectResponse>, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.listChannelPushSubscriptions(
+        fetchOptions: fetchOptions,
+        deviceIdentityToken: deviceIdentityToken,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func deleteChannelPushSubscriptions(
+    options fetchOptions: PushSubscriptionFetchOptions,
+    deviceIdentityToken: String? = nil,
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.deleteChannelPushSubscriptions(
+        fetchOptions: fetchOptions,
+        deviceIdentityToken: deviceIdentityToken,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func listChannelPushSubscriptionChannels(
+    options fetchOptions: PushCursorFetchOptions = .init(),
+    callback: @escaping (Result<PushListResponse<String>, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.listChannelPushSubscriptionChannels(
+        fetchOptions: fetchOptions,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func listPushCredentials(
+    options fetchOptions: PushCursorFetchOptions = .init(),
+    callback: @escaping (Result<PushListResponse<PushObjectResponse>, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.listPushCredentials(fetchOptions: fetchOptions, options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func putPushCredential(
+    provider: String,
+    credential: [String: Any],
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.putPushCredential(
+        provider: provider,
+        credential: credential,
+        options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func publishPush(
+    request: [String: Any],
+    callback: @escaping (Result<PushPublishAcceptedResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(for: PushEndpointFactory.publishPush(request: request, options: options)) {
+      result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func publishPushDirect(
+    request: [String: Any],
+    callback: @escaping (Result<PushPublishAcceptedResponse, SockudoError>) -> Void
+  ) {
+    publishPush(request: request, callback: callback)
+  }
+
+  public func publishPushBatch(
+    requests: [[String: Any]],
+    callback: @escaping (Result<PushItemsResponse<PushPublishAcceptedResponse>, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.publishPushBatch(requests: requests, options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func schedulePush(
+    request: [String: Any],
+    callback: @escaping (Result<PushPublishAcceptedResponse, SockudoError>) -> Void
+  ) {
+    guard request["notBeforeMs"] != nil else {
+      callback(.failure(SockudoError(from: PushHelperError.scheduledPushRequiresNotBeforeMs)))
+      return
+    }
+
+    publishPush(request: request, callback: callback)
+  }
+
+  public func getPublishStatus(
+    publishID: String,
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.getPublishStatus(publishID: publishID, options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
+  public func cancelScheduledPush(
+    publishID: String,
+    callback: @escaping (Result<PushNoContentResponse, SockudoError>) -> Void
+  ) {
+    sendNoContentRequest(
+      endpoint: PushEndpointFactory.cancelScheduledPush(publishID: publishID, options: options),
+      callback: callback)
+  }
+
+  public func postPushDeliveryStatus(
+    event: [String: Any],
+    callback: @escaping (Result<PushObjectResponse, SockudoError>) -> Void
+  ) {
+    apiClient.sendRequest(
+      for: PushEndpointFactory.postPushDeliveryStatus(event: event, options: options)
+    ) { result in
+      callback(result.mapError({ SockudoError(from: $0) }))
+    }
+  }
+
   // MARK: - Idempotency
 
   /// Generates a unique idempotency key using a UUID string.
@@ -510,6 +751,54 @@ public class Sockudo {
         } else {
           callback(result)
         }
+      }
+    }
+  }
+
+  private func sendNoContentRequest<E: APIotaCodableEndpoint>(
+    endpoint: E,
+    callback: @escaping (Result<PushNoContentResponse, SockudoError>) -> Void
+  ) where E.ErrorResponse == Data {
+    let request: URLRequest
+    do {
+      request = try endpoint.request(baseUrlComponents: apiClient.baseUrlComponents)
+    } catch {
+      callback(.failure(SockudoError(from: error)))
+      return
+    }
+
+    apiClient.session.dataTask(with: request) { data, response, error in
+      if let error {
+        callback(.failure(SockudoError(from: APIotaClientError<Data>.internalError(error))))
+        return
+      }
+
+      guard
+        let httpResponse = response as? HTTPURLResponse,
+        let statusCode = HTTPStatusCode(rawValue: httpResponse.statusCode)
+      else {
+        callback(.failure(SockudoError(from: APIotaClientError<Data>.unexpectedResponse)))
+        return
+      }
+
+      guard statusCode.category == .successful else {
+        callback(.failure(SockudoError(from: APIotaClientError<Data>.failedResponse(
+          statusCode: statusCode,
+          errorResponseBody: data ?? Data()))))
+        return
+      }
+
+      callback(.success(PushNoContentResponse()))
+    }.resume()
+  }
+
+  private enum PushHelperError: LocalizedError {
+    case scheduledPushRequiresNotBeforeMs
+
+    var errorDescription: String? {
+      switch self {
+      case .scheduledPushRequiresNotBeforeMs:
+        return "scheduled push requires notBeforeMs"
       }
     }
   }
